@@ -264,8 +264,9 @@ roundScore = round(1000 × optimality)
 
 ### 分享
 
+- 线上地址：https://beat-greedy-da-e676.vercel.app/
 - Vercel 静态链接。
-- OG / Twitter meta + 一张 1200×630 静态分享图（新视觉、中文标题）。
+- OG / Twitter meta + 一张 1200×630 静态分享图（新视觉、中文标题）；图片与分享元信息均使用绝对地址。
 - 结算页“复制战绩”：分数、最优率、链接写入剪贴板。
 - 无登录、无后端、无数据库。
 
@@ -464,8 +465,8 @@ type RoundResult = {
 
 ## 12. 下一步
 
-1. 完成 v1.1 视觉/文案/声音改版与全量 QA。
-2. 提交并推送 GitHub，用已登录的 Vercel 部署最终版本，拿公开链接。
-3. 把 og:image 等元信息里的相对路径换成正式域名，验证分享卡。
+1. ~~完成 v1.1 视觉/文案/声音改版与全量 QA。~~（已完成）
+2. ~~提交并推送 GitHub，用已登录的 Vercel 部署最终版本，拿公开链接。~~（已完成：https://beat-greedy-da-e676.vercel.app/）
+3. ~~把 og:image 等元信息里的相对路径换成正式域名，验证分享卡。~~（已完成：og/twitter image、canonical 均为绝对地址，线上 `/og.png` 实测 200、1200×630）
 4. 公开分享给 5–10 人，观察首局完成率与重开率；再调时间、差距区间、分数权重。
 5. 稳定后再做 Boss Rush 四人组选择与其余六名 Boss 的策略实装。
