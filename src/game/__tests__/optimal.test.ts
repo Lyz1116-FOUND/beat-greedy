@@ -12,7 +12,7 @@ function randomItems(seed: number, count: number): Item[] {
     return {
       id: `item-${index}`,
       name: `Item ${index}`,
-      emoji: "📦",
+      icon: "coin",
       weight,
       value,
     };

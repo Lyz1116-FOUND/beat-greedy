@@ -2,34 +2,34 @@ import { createRng } from "./rng";
 import { solveGreedy } from "./greedy";
 import { solveOptimal } from "./optimal";
 import { MVP_BOSS_ID } from "./bosses";
-import type { Difficulty, Item, Round } from "./types";
+import type { Difficulty, Item, ItemIconKey, Round } from "./types";
 
-const TEMPLATES = [
-  ["Gem", "💎"],
-  ["Console", "🎮"],
-  ["Camera", "📷"],
-  ["Laptop", "💻"],
-  ["Burger", "🍔"],
-  ["Milk Tea", "🧋"],
-  ["Pizza", "🍕"],
-  ["Headphones", "🎧"],
-  ["Watch", "⌚"],
-  ["Sneakers", "👟"],
-  ["Plush", "🧸"],
-  ["Disco Ball", "🪩"],
-  ["Ice Cube", "🧊"],
-  ["Cactus", "🌵"],
-  ["Donut", "🍩"],
-  ["Rubber Duck", "🦆"],
-  ["Yo-Yo", "🪀"],
-  ["Guitar", "🎸"],
-  ["Drone", "🚁"],
-  ["Avocado", "🥑"],
-  ["Magnet", "🧲"],
-  ["Floppy Disk", "💾"],
-  ["Arcade", "🕹️"],
-  ["Gold Coin", "🪙"],
-] as const;
+const TEMPLATES: readonly { name: string; icon: ItemIconKey }[] = [
+  { name: "辣条", icon: "spicy-strip" },
+  { name: "老冰棍", icon: "ice-pop" },
+  { name: "快乐水", icon: "soda" },
+  { name: "干脆面", icon: "noodle" },
+  { name: "卤蛋", icon: "egg" },
+  { name: "烤肠", icon: "sausage" },
+  { name: "奶糖", icon: "candy" },
+  { name: "金币巧克力", icon: "coin" },
+  { name: "糖葫芦", icon: "tanghulu" },
+  { name: "烤红薯", icon: "sweet-potato" },
+  { name: "冰西瓜", icon: "watermelon" },
+  { name: "小游戏机", icon: "handheld" },
+  { name: "随身听", icon: "walkman" },
+  { name: "搪瓷杯", icon: "mug" },
+  { name: "铁皮蛙", icon: "tin-frog" },
+  { name: "玻璃弹珠", icon: "marbles" },
+  { name: "小人书", icon: "comic" },
+  { name: "暖水瓶", icon: "thermos" },
+  { name: "小板凳", icon: "stool" },
+  { name: "蒲扇", icon: "fan" },
+  { name: "电子表", icon: "watch" },
+  { name: "半导体", icon: "radio" },
+  { name: "泡泡糖", icon: "gum" },
+  { name: "火柴", icon: "matches" },
+];
 
 const TIME_LIMITS: Record<Difficulty, number> = {
   easy: 40,
@@ -63,7 +63,7 @@ function makeAttempt(
   const rng = createRng((seed + attempt * 0x9e3779b9) >>> 0);
   const templates = rng.shuffle(TEMPLATES).slice(0, 8);
 
-  const items: Item[] = templates.map(([name, emoji], index) => {
+  const items: Item[] = templates.map(({ name, icon }, index) => {
     const weight = rng.int(2, 9);
     const density = 1.6 + rng.next() * 2.6;
     const noise = (rng.next() * 2 - 1) * NOISE_SCALE[difficulty];
@@ -80,7 +80,7 @@ function makeAttempt(
     return {
       id: `item-${index}`,
       name,
-      emoji,
+      icon,
       weight,
       value,
     };

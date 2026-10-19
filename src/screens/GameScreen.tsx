@@ -13,31 +13,62 @@ import { Backpack } from "../components/Backpack";
 import { BossPanel } from "../components/BossPanel";
 import { Brand } from "../components/Brand";
 import { ItemCard, ItemGhost } from "../components/ItemCard";
+import { SoundToggle } from "../components/SoundToggle";
 import { Timer } from "../components/Timer";
+import { drawBanter, drawIdleBanter } from "../game/banter";
 import { getBoss } from "../game/bosses";
-import type { Item, Round } from "../game/types";
+import { DIFFICULTY_META } from "../game/labels";
+import type { Item, PlayStats, Round } from "../game/types";
 import { useCountdown } from "../hooks/useCountdown";
+import { audio } from "../lib/audio";
 
 interface GameScreenProps {
   round: Round;
   roundNumber: number;
   totalScore: number;
-  onSubmit: (itemIds: string[], secondsLeft: number) => void;
+  soundEnabled: boolean;
+  onToggleSound: () => void;
+  onSubmit: (
+    itemIds: string[],
+    secondsLeft: number,
+    stats: PlayStats,
+  ) => void;
+}
+
+interface Notice {
+  id: number;
+  text: string;
 }
 
 export function GameScreen({
   round,
   roundNumber,
   totalScore,
+  soundEnabled,
+  onToggleSound,
   onSubmit,
 }: GameScreenProps) {
   const boss = getBoss(round.bossId);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const noticeTimer = useRef<number | null>(null);
-  const submittedRef = useRef(false);
+  const [bossLine, setBossLine] = useState(boss.intro);
+  const [submitting, setSubmitting] = useState(false);
+
   const selectedRef = useRef<string[]>([]);
+  const submittedRef = useRef(false);
+  const finalSecondsRef = useRef(0);
+  const lowTimeRef = useRef(false);
+  const lastTickRef = useRef(-1);
+  const lastActionRef = useRef(0);
+  const noticeTimer = useRef<number | null>(null);
+  const submitTimer = useRef<number | null>(null);
+  const statsRef = useRef<PlayStats>({
+    picks: 0,
+    removals: 0,
+    rejections: 0,
+    items: 0,
+  });
 
   const selectedItems = selectedIds
     .map((id) => round.items.find((item) => item.id === id))
@@ -47,11 +78,22 @@ export function GameScreen({
   const activeItem = activeId
     ? round.items.find((item) => item.id === activeId) ?? null
     : null;
+  const difficulty = DIFFICULTY_META[round.difficulty];
 
   const submit = (secondsLeft: number) => {
     if (submittedRef.current) return;
     submittedRef.current = true;
-    onSubmit(selectedRef.current, secondsLeft);
+    finalSecondsRef.current = Math.max(0, secondsLeft);
+    setBossLine(drawBanter("submit", boss.id));
+    setSubmitting(true);
+    audio.play("submit");
+    const stats: PlayStats = {
+      ...statsRef.current,
+      items: selectedRef.current.length,
+    };
+    submitTimer.current = window.setTimeout(() => {
+      onSubmit(selectedRef.current, finalSecondsRef.current, stats);
+    }, 850);
   };
 
   const secondsLeft = useCountdown(round.timeLimit, () => submit(0));
@@ -61,31 +103,95 @@ export function GameScreen({
   }, [selectedIds]);
 
   useEffect(() => {
+    lastActionRef.current = Date.now();
+  }, []);
+
+  useEffect(() => {
     return () => {
       if (noticeTimer.current) window.clearTimeout(noticeTimer.current);
+      if (submitTimer.current) window.clearTimeout(submitTimer.current);
     };
   }, []);
 
-  const showNotice = (message: string) => {
-    setNotice(message);
+  useEffect(() => {
+    if (secondsLeft <= 10 && !lowTimeRef.current && !submittedRef.current) {
+      lowTimeRef.current = true;
+      setBossLine(drawBanter("lowTime", boss.id));
+    }
+    if (
+      secondsLeft > 0 &&
+      secondsLeft <= 5 &&
+      lastTickRef.current !== secondsLeft
+    ) {
+      lastTickRef.current = secondsLeft;
+      audio.play("tick");
+    }
+  }, [secondsLeft, boss.id]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (submittedRef.current || lowTimeRef.current) return;
+      if (Date.now() - lastActionRef.current < 12000) return;
+      lastActionRef.current = Date.now();
+      setBossLine(drawIdleBanter(boss.id));
+    }, 4000);
+    return () => window.clearInterval(timer);
+  }, [boss.id]);
+
+  const showNotice = (text: string) => {
+    setNotice({ id: Date.now(), text });
     if (noticeTimer.current) window.clearTimeout(noticeTimer.current);
-    noticeTimer.current = window.setTimeout(() => setNotice(null), 1600);
+    noticeTimer.current = window.setTimeout(() => setNotice(null), 1900);
   };
+
+  const currentItems = () =>
+    selectedRef.current
+      .map((id) => round.items.find((item) => item.id === id))
+      .filter((item): item is Item => Boolean(item));
 
   const addItem = (item: Item) => {
     if (submittedRef.current) return;
     if (selectedRef.current.includes(item.id)) return;
-    if (totalWeight + item.weight > round.capacity) {
-      showNotice(`TOO HEAVY — ${item.weight} WON'T FIT`);
+    lastActionRef.current = Date.now();
+
+    const items = currentItems();
+    const weight = items.reduce((total, entry) => total + entry.weight, 0);
+    const over = weight + item.weight - round.capacity;
+
+    if (over > 0) {
+      statsRef.current.rejections += 1;
+      audio.play("reject");
+      showNotice(`还差 ${over}，这件先放下`);
+      setBossLine(drawBanter("reject", boss.id));
       return;
     }
-    setSelectedIds((current) => [...current, item.id]);
+
+    const isFirst = statsRef.current.picks === 0;
+    statsRef.current.picks += 1;
+    const next = [...selectedRef.current, item.id];
+    selectedRef.current = next;
+    setSelectedIds(next);
     setNotice(null);
+    audio.play("pick");
+
+    const nextRatio = (weight + item.weight) / round.capacity;
+    if (nextRatio >= 0.8) {
+      setBossLine(drawBanter("tight", boss.id));
+    } else {
+      setBossLine(drawBanter(isFirst ? "firstPick" : "pick", boss.id));
+    }
   };
 
   const removeItem = (itemId: string) => {
     if (submittedRef.current) return;
-    setSelectedIds((current) => current.filter((id) => id !== itemId));
+    lastActionRef.current = Date.now();
+    statsRef.current.removals += 1;
+    const next = selectedRef.current.filter((id) => id !== itemId);
+    selectedRef.current = next;
+    setSelectedIds(next);
+    setNotice(null);
+    audio.play("remove");
+    setBossLine(drawBanter("remove", boss.id));
   };
 
   const toggleItem = (item: Item) => {
@@ -115,13 +221,17 @@ export function GameScreen({
     <button
       type="button"
       onClick={() => submit(secondsLeft)}
-      disabled={selectedItems.length === 0}
-      className={`group flex w-full items-center justify-between border-2 border-acid bg-acid px-4 py-4 text-ink transition-transform hover:-translate-y-0.5 hover:shadow-[5px_5px_0_0_var(--color-paper)] disabled:cursor-not-allowed disabled:border-paper/10 disabled:bg-paper/10 disabled:text-paper/30 disabled:hover:translate-y-0 disabled:hover:shadow-none ${extraClass}`}
+      disabled={selectedItems.length === 0 || submitting}
+      className={`btn-primary w-full whitespace-nowrap ${extraClass}`}
     >
-      <span className="font-mono text-xs font-semibold tracking-[0.2em]">
-        SUBMIT PICK
+      <span>
+        {selectedItems.length === 0
+          ? "先装点东西"
+          : submitting
+            ? "数货中…"
+            : "就这些，结账！"}
       </span>
-      <span className="text-2xl leading-none transition-transform group-hover:translate-x-1">
+      <span aria-hidden="true" className="text-xl leading-none">
         →
       </span>
     </button>
@@ -135,44 +245,43 @@ export function GameScreen({
       onDragEnd={handleDragEnd}
       onDragCancel={() => setActiveId(null)}
     >
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 pb-28 pt-4 sm:px-8 lg:pb-8">
-        <header className="flex items-center justify-between gap-3 border-b border-paper/10 pb-3">
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 pb-28 pt-4 sm:px-6 lg:pb-6">
+        <header className="flex items-center justify-between gap-2 border-b-2 border-dashed border-ink/20 pb-3">
           <Brand compact />
-          <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.14em] text-muted sm:gap-5">
-            <span>
-              ROUND{" "}
-              <span className="text-paper">{String(roundNumber).padStart(2, "0")}</span>
-            </span>
-            <span>
-              SCORE{" "}
-              <span className="text-acid">{totalScore.toLocaleString()}</span>
-            </span>
-            <span className="hidden border border-paper/15 px-2 py-1 uppercase text-paper/60 sm:inline">
-              {round.difficulty}
-            </span>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="text-right leading-none">
+              <p className="text-[9px] tracking-[0.12em] text-ink-soft">
+                第 {roundNumber} 单 · {difficulty.name}
+              </p>
+              <p className="mt-1 font-display text-base leading-none text-vermilion tabular">
+                {totalScore.toLocaleString()}
+                <span className="ml-1 text-[9px] text-ink-soft">分</span>
+              </p>
+            </div>
+            <SoundToggle enabled={soundEnabled} onToggle={onToggleSound} />
           </div>
         </header>
 
         <div className="mt-3 lg:hidden">
-          <BossPanel boss={boss} variant="strip" />
+          <BossPanel boss={boss} line={bossLine} variant="strip" />
         </div>
 
-        <div className="mt-4 hidden items-end justify-between gap-4 sm:flex">
-          <div>
-            <p className="font-mono text-[9px] tracking-[0.2em] text-muted">
-              THE ROUND
-            </p>
-            <h1 className="mt-1 text-balance text-2xl font-bold leading-tight sm:text-3xl">
-              Fill the bag. Beat the bot.
-            </h1>
-          </div>
-          <p className="shrink-0 font-mono text-[10px] tracking-[0.12em] text-muted">
-            CAPACITY <span className="text-paper">{round.capacity}</span>
-          </p>
-        </div>
+        <main className="mt-3 grid flex-1 gap-4 lg:mt-4 lg:grid-cols-[minmax(0,1fr)_306px]">
+          <div className="min-w-0">
+            <div className="mb-3 hidden items-end justify-between gap-3 sm:flex">
+              <div>
+                <p className="text-[9px] tracking-[0.2em] text-ink-soft">
+                  第 {String(roundNumber).padStart(2, "0")} 单
+                </p>
+                <h1 className="mt-1 font-display text-2xl leading-tight">
+                  把包塞满，把老板比下去。
+                </h1>
+              </div>
+              <p className="shrink-0 rounded-full border border-ink/20 bg-cream/60 px-3 py-1 text-[10px] text-ink-soft">
+                容量 {round.capacity}
+              </p>
+            </div>
 
-        <main className="mt-3 grid flex-1 gap-4 lg:mt-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="min-w-0 space-y-4">
             <Backpack
               items={selectedItems}
               capacity={round.capacity}
@@ -181,33 +290,32 @@ export function GameScreen({
               onRemove={removeItem}
             />
 
-            <div aria-live="polite" className="min-h-5">
+            <div aria-live="polite" className="min-h-6">
               {notice && (
-                <p className="animate-shake border border-blood/50 bg-blood/10 px-3 py-2 font-mono text-[10px] tracking-[0.08em] text-blood">
-                  {notice}
+                <p
+                  key={notice.id}
+                  className="animate-shake rounded-lg border-2 border-vermilion bg-vermilion/10 px-3 py-1.5 text-[11px] font-semibold text-vermilion"
+                >
+                  包塞不下了：{notice.text}
                 </p>
               )}
             </div>
 
-            <section>
-              <div className="mb-3 flex items-end justify-between gap-3">
+            <section className="mt-3">
+              <div className="mb-2.5 flex items-end justify-between gap-3">
                 <div>
-                  <p className="font-mono text-[9px] tracking-[0.2em] text-muted">
-                    AVAILABLE LOOT
+                  <p className="text-[9px] tracking-[0.2em] text-ink-soft">
+                    今日货架
                   </p>
-                  <h2 className="mt-1 text-lg font-bold">
-                    Choose <span className="text-acid">carefully</span>.
+                  <h2 className="mt-0.5 font-display text-xl leading-tight">
+                    挑吧，<span className="text-vermilion">别只看单价。</span>
                   </h2>
                 </div>
-                <div className="text-right">
-                  <p className="font-mono text-[9px] tracking-[0.12em] text-muted">
-                    {round.items.length - selectedItems.length} LEFT
-                  </p>
-                  <p className="mt-1 font-mono text-[9px] tracking-[0.12em] text-paper/55 sm:hidden">
-                    CAP {round.capacity}
-                  </p>
-                </div>
+                <span className="shrink-0 rounded-full border border-ink/20 bg-cream/60 px-2.5 py-1 text-[10px] text-ink-soft">
+                  {round.items.length - selectedItems.length} 件没拿
+                </span>
               </div>
+
               <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
                 {round.items.map((item) => (
                   <ItemCard
@@ -218,34 +326,63 @@ export function GameScreen({
                   />
                 ))}
               </div>
-              <p className="mt-3 font-mono text-[9px] leading-relaxed tracking-[0.08em] text-muted">
-                TAP TO ADD / TAP A BAG ITEM TO REMOVE
-                <span className="hidden sm:inline"> / DRAG ON DESKTOP</span>
+
+              <p className="mt-2.5 text-[10px] leading-relaxed text-ink-soft">
+                点一下拿货 · 再点一下放回
+                <span className="hidden sm:inline"> · 桌面可以拖进包里</span>
               </p>
             </section>
           </div>
 
-          <aside className="hidden space-y-3 lg:block">
-            <BossPanel boss={boss} />
+          <aside className="hidden self-start lg:sticky lg:top-4 lg:block lg:space-y-3">
+            <BossPanel boss={boss} line={bossLine} />
             <Timer seconds={secondsLeft} total={round.timeLimit} />
             {submitButton()}
-            <p className="font-mono text-[9px] leading-relaxed tracking-[0.04em] text-muted">
-              The bot has already made its pick. Its method stays hidden until the
-              reveal.
+            <p className="text-center text-[9px] leading-relaxed text-ink-soft">
+              提前交卷，剩下的秒数算钱。
+              <br />
+              老板的选择，交卷后才揭晓。
             </p>
           </aside>
         </main>
 
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-paper/20 bg-ink/95 p-3 backdrop-blur lg:hidden">
-          <div className="mx-auto flex max-w-xl items-center gap-3">
+        <footer className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t-2 border-dashed border-ink/15 pt-3.5 text-[9px] tracking-[0.1em] text-ink-soft">
+          <span>局部最优 ≠ 全局最优</span>
+          <span>V1.1 · KNAPSACK</span>
+        </footer>
+
+        <div
+          className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-ink/20 bg-rice/95 px-3 pt-2.5 backdrop-blur lg:hidden"
+          style={{ paddingBottom: "calc(0.7rem + env(safe-area-inset-bottom))" }}
+        >
+          <div className="mx-auto flex max-w-xl items-center gap-2.5">
             <Timer seconds={secondsLeft} total={round.timeLimit} compact />
-            {submitButton("flex-1 py-3")}
+            <div className="min-w-0 flex-1">
+              {submitButton("px-3 py-2.5 text-base")}
+            </div>
           </div>
         </div>
 
         <DragOverlay dropAnimation={null}>
           {activeItem ? <ItemGhost item={activeItem} /> : null}
         </DragOverlay>
+
+        {submitting && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-rice/90 px-6 backdrop-blur-sm">
+            <div className="paper-card animate-rise w-full max-w-xs rotate-1 p-6 text-center">
+              <span className="seal mx-auto h-16 w-16 bg-cream text-2xl">算</span>
+              <p className="mt-4 font-display text-2xl">老板正在数货……</p>
+              <div className="mt-3 flex justify-center gap-1.5">
+                <span className="thinking-dot h-2 w-2 rounded-full bg-vermilion" />
+                <span className="thinking-dot h-2 w-2 rounded-full bg-mustard" />
+                <span className="thinking-dot h-2 w-2 rounded-full bg-jade" />
+              </div>
+              <p className="mt-3 text-xs leading-relaxed text-ink-soft">
+                “{bossLine}”
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </DndContext>
   );

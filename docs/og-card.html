@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      @font-face {
+        font-family: "BG Shop Display";
+        src: url("/fonts/BGShopDisplay.woff2") format("woff2");
+        font-display: block;
+        font-weight: 400;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+      body {
+        font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+        color: #2a251e;
+        background: #f4ead7;
+      }
+      .sheet {
+        position: relative;
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+        background-color: #f4ead7;
+        background-image:
+          radial-gradient(circle at 93% -10%, rgba(214, 64, 44, 0.16), transparent 430px),
+          radial-gradient(circle at -6% 88%, rgba(62, 119, 87, 0.13), transparent 420px),
+          repeating-linear-gradient(0deg, transparent 0 31px, rgba(42, 37, 30, 0.045) 31px 32px);
+      }
+      .sheet::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        opacity: 0.055;
+        mix-blend-mode: multiply;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E");
+        pointer-events: none;
+      }
+      .circle-a, .circle-b { position: absolute; border-radius: 999px; pointer-events: none; }
+      .circle-a { width: 330px; height: 330px; right: -130px; top: 48px; border: 3px solid rgba(214,64,44,.15); }
+      .circle-b { width: 220px; height: 220px; right: 0; top: 160px; border: 2px dashed rgba(214,64,44,.18); }
+      .asterisk { position: absolute; color: #d6402c; opacity: .55; font-size: 38px; }
+      .asterisk.one { left: 430px; top: 20px; }
+      .asterisk.two { left: 36px; bottom: 24px; font-size: 24px; }
+      .inner {
+        position: relative;
+        z-index: 2;
+        height: 100%;
+        padding: 38px 54px 26px;
+        display: flex;
+        flex-direction: column;
+      }
+      .topbar { display: flex; align-items: center; justify-content: space-between; }
+      .brand { display: flex; align-items: center; gap: 13px; }
+      .brand-seal {
+        width: 55px; height: 55px;
+        display: flex; align-items: center; justify-content: center;
+        border: 3px solid #d6402c; border-radius: 11px;
+        box-shadow: inset 0 0 0 2px #f4ead7, inset 0 0 0 3px #d6402c;
+        color: #d6402c;
+        font-family: "BG Shop Display", sans-serif;
+        font-size: 33px;
+        transform: rotate(-6deg);
+        background: #fff9ec;
+      }
+      .brand-name { font-family: "BG Shop Display", sans-serif; font-size: 27px; line-height: 1; letter-spacing: .04em; }
+      .brand-sub { margin-top: 7px; font-size: 10px; letter-spacing: .2em; color: #6d604e; }
+      .top-pills { display: flex; align-items: center; gap: 9px; }
+      .pill { border: 1px solid rgba(42,37,30,.28); background: rgba(255,249,236,.68); border-radius: 999px; padding: 7px 13px; font-size: 12px; color: #6d604e; white-space: nowrap; }
+      .pill.live { color: #3e7757; display: flex; align-items: center; gap: 6px; }
+      .dot { width: 7px; height: 7px; border-radius: 999px; background: #3e7757; }
+      .hero {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 638px 1fr;
+        gap: 42px;
+        align-items: center;
+        padding-top: 10px;
+      }
+      .eyebrow {
+        display: inline-flex; align-items: center; gap: 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(42,37,30,.25);
+        background: rgba(255,249,236,.7);
+        padding: 7px 13px;
+        font-size: 11px;
+        letter-spacing: .09em;
+        color: #6d604e;
+      }
+      .eyebrow b { color: #2a251e; font-weight: 600; border-right: 1px solid rgba(42,37,30,.22); padding-right: 10px; }
+      h1 {
+        margin: 18px 0 0;
+        font-family: "BG Shop Display", "PingFang SC", sans-serif;
+        font-weight: 400;
+        font-size: 104px;
+        line-height: .93;
+        letter-spacing: .015em;
+      }
+      h1 em { font-style: normal; color: #d6402c; }
+      .lede {
+        margin: 16px 0 0;
+        max-width: 545px;
+        font-size: 16.5px;
+        line-height: 1.75;
+        color: #6d604e;
+      }
+      .lede b { color: #2a251e; font-weight: 600; }
+      .facts { display: flex; gap: 9px; margin-top: 17px; }
+      .fact { display: flex; align-items: baseline; gap: 6px; border: 1px solid rgba(42,37,30,.24); background: rgba(255,249,236,.72); border-radius: 11px; padding: 7px 11px; font-size: 10.5px; color: #6d604e; }
+      .fact b { font-family: "BG Shop Display", sans-serif; font-size: 23px; font-weight: 400; color: #2a251e; line-height: 1; }
+      .actions { display: flex; align-items: center; gap: 24px; margin-top: 22px; }
+      .cta {
+        display: inline-flex; align-items: center; justify-content: center; gap: 13px;
+        min-width: 256px;
+        background: #d6402c; color: #fff9ec;
+        border: 2px solid #2a251e; border-radius: 999px;
+        padding: 14px 28px;
+        box-shadow: 0 6px 0 #2a251e;
+        font-family: "BG Shop Display", sans-serif;
+        font-size: 24px; letter-spacing: .06em;
+      }
+      .hand { font-family: "BG Shop Display", sans-serif; color: #d6402c; font-size: 18px; letter-spacing: .05em; transform: rotate(-3deg); white-space: nowrap; }
+      .hand small { display: block; font-family: inherit; font-size: 10px; letter-spacing: .16em; color: #6d604e; margin-top: 5px; text-align: center; transform: rotate(0deg); }
+      .poster-wrap { position: relative; align-self: center; }
+      .poster {
+        position: relative;
+        background: #fff9ec;
+        border: 2px solid #2a251e;
+        border-radius: 18px;
+        padding: 12px;
+        transform: rotate(-1.4deg);
+        box-shadow: 8px 10px 0 rgba(42,37,30,.16);
+      }
+      .tape {
+        position: absolute; top: -13px; left: 50%; transform: translateX(-50%) rotate(-3deg);
+        width: 104px; height: 24px;
+        background: rgba(227,163,60,.6);
+        border-left: 1px dashed rgba(255,249,236,.7);
+        border-right: 1px dashed rgba(255,249,236,.7);
+      }
+      .photo { position: relative; height: 236px; overflow: hidden; border: 2px solid #2a251e; border-radius: 12px; background: #211e19; }
+      .photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 16%; display: block; }
+      .photo .chip {
+        position: absolute; left: 9px; top: 9px;
+        background: rgba(255,249,236,.94); color: #2a251e;
+        padding: 4px 7px; border-radius: 4px;
+        font-size: 9.5px; font-weight: 700; letter-spacing: .06em;
+      }
+      .photo .duty {
+        position: absolute; right: 9px; top: 9px;
+        border: 1px solid rgba(255,249,236,.4); border-radius: 999px;
+        color: rgba(255,249,236,.8);
+        padding: 3px 8px; font-size: 8px; letter-spacing: .18em;
+      }
+      .photo .name {
+        position: absolute; left: 0; right: 0; bottom: 0;
+        padding: 38px 13px 11px;
+        background: linear-gradient(to top, rgba(33,30,25,.98), rgba(33,30,25,.5), transparent);
+        color: #fff9ec;
+        font-family: "BG Shop Display", sans-serif;
+        font-size: 27px; line-height: 1;
+      }
+      .photo .name span { font-family: inherit; font-size: 10px; letter-spacing: .22em; color: rgba(255,249,236,.6); margin-left: 7px; }
+      .speech {
+        position: relative;
+        margin-top: 12px;
+        border: 2px solid #2a251e;
+        border-radius: 12px;
+        background: #f4ead7;
+        padding: 11px 13px 12px;
+      }
+      .speech::before { content: ""; position: absolute; left: 25px; top: -8px; width: 12px; height: 12px; background: #f4ead7; border-left: 2px solid #2a251e; border-top: 2px solid #2a251e; transform: rotate(45deg); }
+      .speech .meta { font-size: 8px; letter-spacing: .2em; color: #6d604e; }
+      .speech p { margin: 5px 0 0; font-size: 17px; font-weight: 600; line-height: 1.4; }
+      .poster-foot { display: flex; justify-content: space-between; align-items: center; padding: 9px 4px 2px; font-size: 9px; color: #6d604e; }
+      .stamp {
+        position: absolute;
+        right: -24px; bottom: 32px;
+        width: 82px; height: 82px;
+        border: 3px solid #d6402c;
+        border-radius: 999px;
+        box-shadow: inset 0 0 0 2px #fff9ec, inset 0 0 0 3px #d6402c;
+        color: #d6402c;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 1px;
+        font-family: "BG Shop Display", sans-serif;
+        font-size: 19px;
+        line-height: 1.05;
+        letter-spacing: .04em;
+        transform: rotate(9deg);
+        background: rgba(255,249,236,.72);
+      }
+      .stamp small { font-size: 7px; letter-spacing: .18em; }
+      .sidenote {
+        position: absolute;
+        right: 6px; bottom: -30px;
+        color: #d6402c;
+        font-family: "BG Shop Display", sans-serif;
+        font-size: 15px;
+        letter-spacing: .04em;
+        transform: rotate(-4deg);
+        white-space: nowrap;
+      }
+      footer {
+        display: flex; justify-content: space-between; align-items: center;
+        border-top: 2px dashed rgba(42,37,30,.18);
+        padding-top: 12px;
+        font-size: 9.5px;
+        letter-spacing: .1em;
+        color: #6d604e;
+      }
+      footer b { color: #2a251e; font-weight: 600; letter-spacing: .06em; }
+    </style>
+  </head>
+  <body>
+    <div class="sheet">
+      <div class="circle-a"></div>
+      <div class="circle-b"></div>
+      <div class="asterisk one">✳</div>
+      <div class="asterisk two">✳</div>
+      <div class="inner">
+        <header class="topbar">
+          <div class="brand">
+            <div class="brand-seal">贪</div>
+            <div>
+              <div class="brand-name">贪心小卖部</div>
+              <div class="brand-sub">BEAT GREEDY · 反贪心练习</div>
+            </div>
+          </div>
+          <div class="top-pills">
+            <span class="pill live"><span class="dot"></span>今日营业</span>
+            <span class="pill">背包对决 · 0/1 KNAPSACK</span>
+          </div>
+        </header>
+
+        <section class="hero">
+          <div class="copy">
+            <span class="eyebrow"><b>第 01 单</b>老板先拿，你后交</span>
+            <h1>别只拿<br />眼前<em>那件</em>。</h1>
+            <p class="lede">
+              老板<b>牛来</b>每一步都只挑眼前最划算的。你可以把整间店看一遍，再决定往包里塞什么。
+            </p>
+            <div class="facts">
+              <span class="fact"><b>30</b>秒一单</span>
+              <span class="fact"><b>8</b>件货</span>
+              <span class="fact"><b>0</b>次登录</span>
+            </div>
+            <div class="actions">
+              <span class="cta">进店应战 <span style="font-family: sans-serif">→</span></span>
+              <span class="hand">局部最优 ≠ 全局最优<small>SCORE THE WHOLE SHELF</small></span>
+            </div>
+          </div>
+
+          <div class="poster-wrap">
+            <div class="poster">
+              <div class="tape"></div>
+              <div class="photo">
+                <img src="/bosses/bull-rush.webp" alt="牛来" />
+                <span class="chip">本月销冠</span>
+                <span class="duty">ON DUTY</span>
+                <div class="name">牛来 <span>BULL RUSH</span></div>
+              </div>
+              <div class="speech">
+                <div class="meta">老板说 · 店员档案 / 03</div>
+                <p>“我只拿当前最划算的那一个。”</p>
+              </div>
+              <div class="poster-foot">
+                <span>它会先拿，你后交</span>
+                <span>策略保密</span>
+              </div>
+            </div>
+            <div class="stamp">谢绝<br />还价</div>
+            <div class="sidenote">“看什么看，称重啊。”</div>
+          </div>
+        </section>
+
+        <footer>
+          <span>没有登录 / 没有后端 / 只有一头很会算账的牛</span>
+          <span><b>贪心小卖部</b> · V1.1 · KNAPSACK</span>
+        </footer>
+      </div>
+    </div>
+  </body>
+</html>

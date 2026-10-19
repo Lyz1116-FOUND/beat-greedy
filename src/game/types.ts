@@ -4,12 +4,45 @@ export type BossStrategy = "ratio" | "value" | "weight" | "ratio-swap";
 
 export type Grade = "S" | "A" | "B" | "C" | "D";
 
+export type ItemIconKey =
+  | "spicy-strip"
+  | "ice-pop"
+  | "soda"
+  | "noodle"
+  | "egg"
+  | "sausage"
+  | "candy"
+  | "coin"
+  | "tanghulu"
+  | "sweet-potato"
+  | "watermelon"
+  | "handheld"
+  | "walkman"
+  | "mug"
+  | "tin-frog"
+  | "marbles"
+  | "comic"
+  | "thermos"
+  | "stool"
+  | "fan"
+  | "watch"
+  | "radio"
+  | "gum"
+  | "matches";
+
 export interface Item {
   id: string;
   name: string;
-  emoji: string;
+  icon: ItemIconKey;
   weight: number;
   value: number;
+}
+
+export interface PlayStats {
+  picks: number;
+  removals: number;
+  rejections: number;
+  items: number;
 }
 
 export interface Selection {

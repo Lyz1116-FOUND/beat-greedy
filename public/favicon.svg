@@ -1,5 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-  <rect width="48" height="48" fill="#10110e"/>
-  <rect x="4" y="4" width="40" height="40" fill="#d9ff43"/>
-  <text x="24" y="33.5" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="23" font-weight="900" letter-spacing="-1.5" fill="#10110e">BG</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="15" fill="#f4ead7"/>
+  <g transform="rotate(-5 32 32)">
+    <rect x="5.5" y="5.5" width="53" height="53" rx="10" fill="#d6402c" stroke="#2a251e" stroke-width="3"/>
+    <rect x="10" y="10" width="44" height="44" rx="5.5" fill="none" stroke="#fff9ec" stroke-width="1.2" opacity=".55"/>
+    <path transform="translate(16.28 47.42) scale(0.03753 -0.03753)" fill="#fff9ec" d="M131 609C256 648 364 705 446 774C518 700 628 637 758 601L784 682C674 713 567 768 504 828C514 838 523 848 531 859L466 904C372 807 261 735 101 684ZM233 119 255 327H567L545 119H636L659 330C663 377 638 410 581 410H554C593 441 629 480 658 524C678 555 657 600 603 600H465L508 634C487 667 464 697 439 723L377 673C398 651 415 628 432 600H198L189 525H557C521 482 481 445 430 410H173L142 119ZM88 -80C225 -52 326 5 386 78C475 31 560 -20 646 -82L703 -8C621 48 515 103 426 143C437 168 444 195 446 223L452 289H359L354 236C342 94 224 33 54 3Z"/>
+  </g>
 </svg>

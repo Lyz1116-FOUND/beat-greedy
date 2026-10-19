@@ -10,10 +10,10 @@ const round: Round = {
   bossId: "bull-rush",
   timeLimit: 40,
   items: [
-    { id: "a", name: "A", emoji: "🅰️", weight: 5, value: 10 },
-    { id: "b", name: "B", emoji: "🅱️", weight: 6, value: 11 },
-    { id: "c", name: "C", emoji: "🇨", weight: 4, value: 8 },
-    { id: "d", name: "D", emoji: "🇩", weight: 9, value: 9 },
+    { id: "a", name: "辣条", icon: "spicy-strip", weight: 5, value: 10 },
+    { id: "b", name: "奶糖", icon: "candy", weight: 6, value: 11 },
+    { id: "c", name: "弹珠", icon: "marbles", weight: 4, value: 8 },
+    { id: "d", name: "蒲扇", icon: "fan", weight: 9, value: 9 },
   ],
 };
 
